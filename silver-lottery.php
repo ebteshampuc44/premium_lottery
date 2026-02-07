@@ -7,6 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -80,7 +85,7 @@
                     </div>
                 </a>
                 
-                <!-- Navigation -->
+                <!-- Desktop Navigation -->
                 <nav class="hidden lg:flex items-center space-x-6">
                     <a href="index.php" class="text-gray-300 hover:text-accent transition-colors font-medium">Home</a>
                     <a href="index.php#lotteries" class="text-gray-300 hover:text-accent transition-colors font-medium">Lotteries</a>
@@ -89,12 +94,12 @@
                     <a href="index.php#how-to-play" class="text-gray-300 hover:text-accent transition-colors font-medium">How to Play</a>
                 </nav>
                 
-                <!-- Login/Signup -->
-                <div class="hidden lg:flex items-center space-x-4">
-                    <a href="login.php" class="bg-gradient-primary text-white px-6 py-2 rounded-full font-semibold hover:shadow-button-hover transition-all shadow-button">
+                <!-- Desktop Login/Signup -->
+                <div class="hidden lg:flex items-center space-x-4" id="desktopAuthButtons">
+                    <a href="login.php" class="bg-gradient-primary text-white px-6 py-2 rounded-full font-semibold hover:shadow-button-hover transition-all shadow-button login-btn">
                         <i class="fas fa-user mr-2"></i>Login
                     </a>
-                    <a href="signup.php" class="glass-effect text-white px-6 py-2 rounded-full font-semibold hover:bg-white/10 transition-colors">
+                    <a href="signup.php" class="glass-effect text-white px-6 py-2 rounded-full font-semibold hover:bg-white/10 transition-colors signup-btn">
                         <i class="fas fa-user-plus mr-2"></i>Sign Up
                     </a>
                 </div>
@@ -185,7 +190,7 @@
                 </div>
                 
                 <!-- Login & Sign Up Buttons -->
-                <div class="mb-8">
+                <div class="mb-8" id="mobileAuthButtons">
                     <a href="login.php" class="block w-full bg-gradient-primary text-white py-3 rounded-xl font-bold text-lg mb-3 text-center login-btn">
                         <i class="fas fa-user mr-2"></i> Login to Account
                     </a>
@@ -232,16 +237,21 @@
                 <?php else: ?>
                     <div class="text-center mb-10">
                         <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Silver Lottery</h2>
-                        <p class="text-gray-400 text-lg">Total <?php echo count($tickets); ?> Tickets</p>
+                        <p class="text-gray-400 text-lg">Total <?php echo count($tickets); ?> Tickets Available</p>
+                        <div class="flex justify-center items-center mt-4">
+                            <div class="glass-effect rounded-lg px-4 py-2">
+                                <span class="text-silver font-semibold">Ticket Price: ৳50</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <?php foreach($tickets as $ticket): ?>
-                            <div class="glass-effect rounded-xl p-6 hover:shadow-lg transition-shadow">
+                            <div class="glass-effect rounded-xl p-6 hover:shadow-lg transition-shadow border border-silver/20">
                                 <div class="flex justify-between items-start mb-4">
                                     <div>
                                         <span class="text-sm text-gray-400">Ticket Number</span>
-                                        <h3 class="text-xl font-bold font-mono"><?php echo $ticket['ticket_number']; ?></h3>
+                                        <h3 class="text-xl font-bold font-mono text-silver"><?php echo $ticket['ticket_number']; ?></h3>
                                     </div>
                                     <div class="w-12 h-12 rounded-lg gradient-silver flex items-center justify-center">
                                         <i class="fas fa-ticket-alt text-gray-800"></i>
@@ -258,9 +268,21 @@
                                 <?php if($ticket['prize_description']): ?>
                                     <div class="mb-4">
                                         <span class="text-sm text-gray-400">Description</span>
-                                        <p class="text-lg"><?php echo $ticket['prize_description']; ?></p>
+                                        <p class="text-lg text-gray-300"><?php echo $ticket['prize_description']; ?></p>
                                     </div>
                                 <?php endif; ?>
+                                
+                                <div class="mb-4">
+                                    <span class="text-sm text-gray-400">Status</span>
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                                        <i class="fas fa-check-circle mr-1"></i> Available
+                                    </span>
+                                </div>
+                                
+                                <button onclick="buyTicket('silver', '<?php echo $ticket['ticket_number']; ?>', <?php echo $ticket['prize_amount']; ?>)" 
+                                        class="w-full bg-gradient-to-r from-gray-500 to-gray-700 text-white py-3 rounded-xl font-bold hover:opacity-90 transition-opacity">
+                                    <i class="fas fa-shopping-cart mr-2"></i> Buy This Ticket
+                                </button>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -361,42 +383,284 @@
     </footer>
 
     <script>
-        // Mobile Menu Toggle
-        const menuToggle = document.getElementById('menu-toggle');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const menuClose = document.getElementById('menu-close');
-        const menuOverlay = document.getElementById('menu-overlay');
-        
-        menuToggle.addEventListener('click', () => {
-            mobileMenu.classList.remove('hidden');
-            mobileMenu.classList.add('animate-slide-in-right');
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQhuCLaKZ3SAr_X0kEcq2oBs6mq_9R15M",
+            authDomain: "lottoelite-911a8.firebaseapp.com",
+            projectId: "lottoelite-911a8",
+            storageBucket: "lottoelite-911a8.firebasestorage.app",
+            messagingSenderId: "457694339359",
+            appId: "1:457694339359:web:46df2a974ff3731dc3d02a",
+            measurementId: "G-3JKBYZN72R"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+
+        // Check authentication state
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in
+                updateHeaderForLoggedInUser(user);
+            } else {
+                // User is signed out
+                updateHeaderForLoggedOutUser();
+            }
         });
-        
-        menuClose.addEventListener('click', () => {
-            mobileMenu.classList.add('animate-slide-out-right');
+
+        function updateHeaderForLoggedInUser(user) {
+            // Update desktop login button
+            const desktopLoginBtn = document.querySelector('#desktopAuthButtons .login-btn');
+            if (desktopLoginBtn) {
+                const userName = user.displayName || user.email.split('@')[0];
+                desktopLoginBtn.innerHTML = `<i class="fas fa-user mr-2"></i>${userName}`;
+                desktopLoginBtn.href = "#";
+                desktopLoginBtn.onclick = function(e) {
+                    e.preventDefault();
+                    showUserMenu(user);
+                };
+                
+                // Add desktop logout button if not exists
+                if (!document.querySelector('#desktopAuthButtons .logout-btn')) {
+                    const logoutBtn = document.createElement('a');
+                    logoutBtn.href = "#";
+                    logoutBtn.className = "logout-btn bg-red-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-red-700 transition-colors";
+                    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>Logout';
+                    logoutBtn.onclick = function(e) {
+                        e.preventDefault();
+                        logoutUser();
+                    };
+                    document.querySelector('#desktopAuthButtons').appendChild(logoutBtn);
+                    
+                    // Hide signup button
+                    const signupBtn = document.querySelector('#desktopAuthButtons .signup-btn');
+                    if (signupBtn) signupBtn.style.display = 'none';
+                }
+            }
+            
+            // Update mobile login button
+            const mobileLoginBtn = document.querySelector('#mobileAuthButtons .login-btn');
+            if (mobileLoginBtn) {
+                const userName = user.displayName || user.email.split('@')[0];
+                mobileLoginBtn.innerHTML = `<i class="fas fa-user mr-2"></i>${userName}`;
+                mobileLoginBtn.href = "#";
+                mobileLoginBtn.onclick = function(e) {
+                    e.preventDefault();
+                    showUserMenu(user);
+                    // Close mobile menu
+                    document.getElementById('mobile-menu').classList.add('animate-slide-out-right');
+                    setTimeout(() => {
+                        document.getElementById('mobile-menu').classList.add('hidden');
+                        document.getElementById('mobile-menu').classList.remove('animate-slide-out-right');
+                    }, 300);
+                };
+                
+                // Update mobile signup button to logout
+                const mobileSignupBtn = document.querySelector('#mobileAuthButtons .register-btn');
+                if (mobileSignupBtn) {
+                    mobileSignupBtn.innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>Logout';
+                    mobileSignupBtn.href = "#";
+                    mobileSignupBtn.onclick = function(e) {
+                        e.preventDefault();
+                        logoutUser();
+                        // Close mobile menu
+                        document.getElementById('mobile-menu').classList.add('animate-slide-out-right');
+                        setTimeout(() => {
+                            document.getElementById('mobile-menu').classList.add('hidden');
+                            document.getElementById('mobile-menu').classList.remove('animate-slide-out-right');
+                        }, 300);
+                    };
+                }
+            }
+        }
+
+        function updateHeaderForLoggedOutUser() {
+            // Reset desktop buttons
+            const desktopLoginBtn = document.querySelector('#desktopAuthButtons .login-btn');
+            if (desktopLoginBtn) {
+                desktopLoginBtn.innerHTML = '<i class="fas fa-user mr-2"></i>Login';
+                desktopLoginBtn.href = "login.php";
+                desktopLoginBtn.onclick = null;
+                
+                // Show signup button
+                const signupBtn = document.querySelector('#desktopAuthButtons .signup-btn');
+                if (signupBtn) signupBtn.style.display = 'block';
+            }
+            
+            // Remove desktop logout button
+            const desktopLogoutBtn = document.querySelector('#desktopAuthButtons .logout-btn');
+            if (desktopLogoutBtn) {
+                desktopLogoutBtn.remove();
+            }
+            
+            // Reset mobile buttons
+            const mobileLoginBtn = document.querySelector('#mobileAuthButtons .login-btn');
+            if (mobileLoginBtn) {
+                mobileLoginBtn.innerHTML = '<i class="fas fa-user mr-2"></i> Login to Account';
+                mobileLoginBtn.href = "login.php";
+                mobileLoginBtn.onclick = null;
+            }
+            
+            const mobileSignupBtn = document.querySelector('#mobileAuthButtons .register-btn');
+            if (mobileSignupBtn) {
+                mobileSignupBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i> Create Account';
+                mobileSignupBtn.href = "signup.php";
+                mobileSignupBtn.onclick = null;
+            }
+        }
+
+        function showUserMenu(user) {
+            // Remove existing menu
+            const existingMenu = document.querySelector('.user-menu-popup');
+            if (existingMenu) {
+                existingMenu.remove();
+                return;
+            }
+            
+            // Create user menu
+            const menuHtml = `
+                <div class="user-menu-popup fixed top-20 right-4 bg-gray-800 rounded-xl p-4 min-w-64 shadow-lg z-50 border border-gray-700">
+                    <div class="mb-3 pb-3 border-b border-gray-700">
+                        <p class="text-white font-semibold">${user.displayName || 'User'}</p>
+                        <p class="text-gray-400 text-sm">${user.email}</p>
+                        ${user.emailVerified ? 
+                            '<span class="text-green-500 text-xs mt-1 inline-block"><i class="fas fa-check-circle mr-1"></i>Verified</span>' : 
+                            '<span class="text-yellow-500 text-xs mt-1 inline-block"><i class="fas fa-exclamation-circle mr-1"></i>Not Verified</span>'
+                        }
+                    </div>
+                    <a href="profile.php" class="block text-gray-300 hover:text-white py-2 px-2 rounded hover:bg-gray-700">
+                        <i class="fas fa-user mr-2"></i>Profile
+                    </a>
+                    <a href="my-tickets.php" class="block text-gray-300 hover:text-white py-2 px-2 rounded hover:bg-gray-700">
+                        <i class="fas fa-ticket-alt mr-2"></i>My Tickets
+                    </a>
+                    <a href="my-winnings.php" class="block text-gray-300 hover:text-white py-2 px-2 rounded hover:bg-gray-700">
+                        <i class="fas fa-trophy mr-2"></i>My Winnings
+                    </a>
+                    <div class="pt-2 mt-2 border-t border-gray-700">
+                        <button onclick="logoutUser()" class="w-full text-red-400 hover:text-red-300 py-2 px-2 rounded hover:bg-red-900/20 text-left">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            const menuDiv = document.createElement('div');
+            menuDiv.innerHTML = menuHtml;
+            document.body.appendChild(menuDiv);
+            
+            // Close menu when clicking outside
             setTimeout(() => {
-                mobileMenu.classList.add('hidden');
-                mobileMenu.classList.remove('animate-slide-out-right');
-            }, 300);
-        });
-        
-        menuOverlay.addEventListener('click', () => {
-            mobileMenu.classList.add('animate-slide-out-right');
-            setTimeout(() => {
-                mobileMenu.classList.add('hidden');
-                mobileMenu.classList.remove('animate-slide-out-right');
-            }, 300);
-        });
-        
-        // Close menu when clicking on menu links
-        document.querySelectorAll('#mobile-menu a').forEach(link => {
-            link.addEventListener('click', () => {
-                mobileMenu.classList.add('animate-slide-out-right');
-                setTimeout(() => {
-                    mobileMenu.classList.add('hidden');
-                    mobileMenu.classList.remove('animate-slide-out-right');
-                }, 300);
+                const closeMenu = function(e) {
+                    if (!e.target.closest('.user-menu-popup') && 
+                        !e.target.closest('#desktopAuthButtons .login-btn') &&
+                        !e.target.closest('#mobileAuthButtons .login-btn')) {
+                        menuDiv.remove();
+                        document.removeEventListener('click', closeMenu);
+                    }
+                };
+                document.addEventListener('click', closeMenu);
+            }, 100);
+        }
+
+        function logoutUser() {
+            auth.signOut().then(() => {
+                alert("Logged out successfully!");
+                localStorage.removeItem('lottoUser');
+                window.location.reload();
+            }).catch((error) => {
+                alert("Logout error: " + error.message);
             });
+        }
+
+        // Buy Ticket Function
+        function buyTicket(lotteryType, ticketNumber, prizeAmount) {
+            const user = auth.currentUser;
+            
+            if (!user) {
+                alert("Please login first to purchase tickets!");
+                window.location.href = 'login.php';
+                return;
+            }
+            
+            if (!user.emailVerified) {
+                alert("Please verify your email before purchasing tickets!");
+                return;
+            }
+            
+            const ticketPrice = lotteryType === 'silver' ? 50 : 
+                              lotteryType === 'gold' ? 100 : 30;
+            
+            const confirmPurchase = confirm(
+                `Confirm Purchase:\n\n` +
+                `Lottery: ${lotteryType.charAt(0).toUpperCase() + lotteryType.slice(1)} Lottery\n` +
+                `Ticket: ${ticketNumber}\n` +
+                `Ticket Price: ৳${ticketPrice}\n` +
+                `Potential Prize: ৳${prizeAmount}\n\n` +
+                `Do you want to proceed with the purchase?`
+            );
+            
+            if (confirmPurchase) {
+                alert(`✅ Ticket purchased successfully!\n\n` +
+                      `Ticket: ${ticketNumber}\n` +
+                      `Price: ৳${ticketPrice}\n\n` +
+                      `Check your email for confirmation and ticket details.`);
+                
+                // Here you would typically make an API call to save the purchase
+                // saveTicketPurchase(user.uid, lotteryType, ticketNumber, ticketPrice);
+            }
+        }
+
+        // Check localStorage for user on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedUser = localStorage.getItem('lottoUser');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                updateHeaderForLoggedInUser(user);
+            }
+            
+            // Mobile Menu Toggle
+            const menuToggle = document.getElementById('menu-toggle');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const menuClose = document.getElementById('menu-close');
+            const menuOverlay = document.getElementById('menu-overlay');
+            
+            if (menuToggle && mobileMenu) {
+                menuToggle.addEventListener('click', () => {
+                    mobileMenu.classList.remove('hidden');
+                    mobileMenu.classList.add('animate-slide-in-right');
+                });
+                
+                menuClose.addEventListener('click', () => {
+                    mobileMenu.classList.add('animate-slide-out-right');
+                    setTimeout(() => {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.classList.remove('animate-slide-out-right');
+                    }, 300);
+                });
+                
+                menuOverlay.addEventListener('click', () => {
+                    mobileMenu.classList.add('animate-slide-out-right');
+                    setTimeout(() => {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.classList.remove('animate-slide-out-right');
+                    }, 300);
+                });
+                
+                // Close menu when clicking on menu links
+                document.querySelectorAll('#mobile-menu a').forEach(link => {
+                    link.addEventListener('click', () => {
+                        mobileMenu.classList.add('animate-slide-out-right');
+                        setTimeout(() => {
+                            mobileMenu.classList.add('hidden');
+                            mobileMenu.classList.remove('animate-slide-out-right');
+                        }, 300);
+                    });
+                });
+            }
         });
     </script>
 </body>

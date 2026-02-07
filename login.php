@@ -1,4 +1,3 @@
-<!-- login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -116,7 +120,7 @@
                         <input type="checkbox" id="remember" class="h-4 w-4 text-primary rounded focus:ring-primary border-gray-700">
                         <label for="remember" class="ml-2 text-gray-400 text-sm">Remember me</label>
                     </div>
-                    <a href="#" class="text-primary hover:text-primary/80 text-sm">Forgot password?</a>
+                    <a href="#" id="forgotPassword" class="text-primary hover:text-primary/80 text-sm">Forgot password?</a>
                 </div>
                 
                 <!-- Submit Button -->
@@ -136,7 +140,7 @@
                 
                 <!-- Social Login -->
                 <div class="grid grid-cols-2 gap-3">
-                    <button type="button" class="bg-dark border border-gray-700 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center">
+                    <button type="button" id="googleLogin" class="bg-dark border border-gray-700 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center">
                         <i class="fab fa-google text-red-500 mr-2"></i> Google
                     </button>
                     <button type="button" class="bg-dark border border-gray-700 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center">
@@ -160,6 +164,23 @@
     </div>
 
     <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQhuCLaKZ3SAr_X0kEcq2oBs6mq_9R15M",
+            authDomain: "lottoelite-911a8.firebaseapp.com",
+            projectId: "lottoelite-911a8",
+            storageBucket: "lottoelite-911a8.firebasestorage.app",
+            messagingSenderId: "457694339359",
+            appId: "1:457694339359:web:46df2a974ff3731dc3d02a",
+            measurementId: "G-3JKBYZN72R"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        
         // Toggle Password Visibility
         const togglePassword = document.getElementById('togglePassword');
         const passwordInput = document.getElementById('password');
@@ -172,37 +193,149 @@
         });
         
         // Form Submission
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
             
-            // Demo validation
-            if (email && password) {
-                // Show loading state
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Logging in...';
-                submitBtn.disabled = true;
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Logging in...';
+            submitBtn.disabled = true;
+            
+            try {
+                // Firebase email/password login
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
                 
-                // Simulate API call
-                setTimeout(() => {
-                    alert('Login successful! Redirecting to dashboard...');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
+                // Check if email is verified
+                if (!user.emailVerified) {
+                    const resend = confirm(
+                        `⚠️ Email not verified!\n\nEmail: ${user.email}\n\nYou need to verify your email before logging in.\n\nWould you like us to send a new verification email?`
+                    );
                     
-                    // In real app, you would redirect here
-                    // window.location.href = 'dashboard.php';
-                }, 1500);
+                    if (resend) {
+                        await user.sendEmailVerification();
+                        alert(`✅ New verification email sent to:\n${user.email}\n\nPlease check your inbox and verify your email.`);
+                    }
+                    
+                    await auth.signOut();
+                    return;
+                }
+                
+                // Save user data
+                const userData = {
+                    uid: user.uid,
+                    fullName: user.displayName || email.split('@')[0],
+                    email: user.email,
+                    emailVerified: user.emailVerified,
+                    photoURL: user.photoURL
+                };
+                
+                localStorage.setItem('lottoUser', JSON.stringify(userData));
+                
+                // Show success message
+                alert(`🎉 Login successful!\n\nWelcome back ${user.displayName || email.split('@')[0]}!\n\nRedirecting to home page...`);
+                
+                // Redirect to home page
+                setTimeout(() => {
+                    window.location.href = 'index.php';
+                }, 2000);
+                
+            } catch (error) {
+                let errorMessage = "Login failed.";
+                
+                switch(error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = '❌ No account found with this email!\n\nPlease sign up first or check your email address.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = '❌ Incorrect password!\n\nPlease check your password and try again.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = '❌ Invalid email format!\n\nPlease enter a valid email address.';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = '❌ Account disabled!\n\nThis account has been disabled. Please contact support.';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = '⚠️ Too many failed attempts!\n\nPlease try again later or reset your password.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = '🌐 Network error!\n\nPlease check your internet connection.';
+                        break;
+                    default:
+                        errorMessage = `❌ Error: ${error.message}`;
+                }
+                
+                alert(errorMessage);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         });
-        
-        // Demo login auto-fill
-        document.addEventListener('DOMContentLoaded', function() {
-            // Optional: Auto-fill demo credentials
-            // document.getElementById('email').value = 'demo@lottoelite.com';
-            // document.getElementById('password').value = 'demo123';
+
+        // Google Login
+        document.getElementById('googleLogin').addEventListener('click', async function() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                
+                // Save user data
+                const userData = {
+                    uid: user.uid,
+                    fullName: user.displayName,
+                    email: user.email,
+                    emailVerified: user.emailVerified,
+                    photoURL: user.photoURL
+                };
+                
+                localStorage.setItem('lottoUser', JSON.stringify(userData));
+                
+                alert(`🎉 Welcome ${user.displayName}!\n\n✅ Google login successful.\n\nRedirecting to home page...`);
+                
+                // Redirect to home
+                setTimeout(() => {
+                    window.location.href = 'index.php';
+                }, 2000);
+                
+            } catch (error) {
+                let errorMessage = "Google login failed.";
+                
+                if (error.code === 'auth/popup-blocked') {
+                    errorMessage = 'Popup was blocked by your browser!\n\nPlease allow popups for this site.';
+                } else if (error.code === 'auth/popup-closed-by-user') {
+                    errorMessage = 'Popup was closed!\n\nPlease try again.';
+                } else {
+                    errorMessage = `❌ Error: ${error.message}`;
+                }
+                
+                alert(errorMessage);
+            }
+        });
+
+        // Forgot Password
+        document.getElementById('forgotPassword').addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            const email = prompt("Enter your email address to reset password:");
+            if (!email) return;
+            
+            if (!email.includes('@')) {
+                alert("Please enter a valid email address.");
+                return;
+            }
+            
+            try {
+                await auth.sendPasswordResetEmail(email);
+                alert(`✅ Password reset email sent to:\n${email}\n\nPlease check your inbox and follow the instructions.`);
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
         });
     </script>
 </body>

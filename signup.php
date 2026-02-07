@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -234,7 +238,7 @@
                 
                 <!-- Social Sign Up -->
                 <div class="grid grid-cols-2 gap-3">
-                    <button type="button" class="bg-dark border border-gray-700 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center">
+                    <button type="button" id="googleSignUp" class="bg-dark border border-gray-700 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center">
                         <i class="fab fa-google text-red-500 mr-2"></i> Google
                     </button>
                     <button type="button" class="bg-dark border border-gray-700 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center">
@@ -261,7 +265,24 @@
     </div>
 
     <script>
-        // Password visibility toggle
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQhuCLaKZ3SAr_X0kEcq2oBs6mq_9R15M",
+            authDomain: "lottoelite-911a8.firebaseapp.com",
+            projectId: "lottoelite-911a8",
+            storageBucket: "lottoelite-911a8.firebasestorage.app",
+            messagingSenderId: "457694339359",
+            appId: "1:457694339359:web:46df2a974ff3731dc3d02a",
+            measurementId: "G-3JKBYZN72R"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+
+        // Toggle Password Visibility
         const togglePassword = document.getElementById('togglePassword');
         const passwordInput = document.getElementById('password');
         
@@ -357,7 +378,7 @@
         document.getElementById('confirmPassword').addEventListener('input', checkPasswordMatch);
         
         // Form submission
-        document.getElementById('signupForm').addEventListener('submit', function(e) {
+        document.getElementById('signupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const fullName = document.getElementById('fullName').value;
@@ -369,18 +390,18 @@
             
             // Validate passwords match
             if (!checkPasswordMatch()) {
-                alert('Passwords do not match!');
+                alert('❌ Passwords do not match!');
                 return;
             }
             
             // Validate password strength
             if (password.length < 8) {
-                alert('Password must be at least 8 characters long!');
+                alert('❌ Password must be at least 8 characters long!');
                 return;
             }
             
             if (!terms) {
-                alert('You must agree to the Terms & Conditions!');
+                alert('❌ You must agree to the Terms & Conditions!');
                 return;
             }
             
@@ -390,16 +411,144 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creating Account...';
             submitBtn.disabled = true;
             
-            // Simulate API call
-            setTimeout(() => {
-                alert(`Account created successfully!\nWelcome to LottoElite, ${fullName}!`);
+            try {
+                // Firebase email/password signup
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Send email verification
+                await user.sendEmailVerification();
+                
+                // Update user profile with name
+                await user.updateProfile({
+                    displayName: fullName
+                });
+                
+                // Save user data to your database
+                const userData = {
+                    uid: user.uid,
+                    fullName: fullName,
+                    email: user.email,
+                    phone: phone,
+                    emailVerified: user.emailVerified,
+                    createdAt: new Date().toISOString()
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('lottoUser', JSON.stringify(userData));
+                
+                // Save to your backend database
+                try {
+                    const response = await fetch('save-user.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    const result = await response.json();
+                    console.log("User saved to database:", result);
+                } catch (dbError) {
+                    console.log("Database save failed, but user created:", dbError);
+                }
+                
+                // Show success message
+                const successMessage = `🎉 Account created successfully!\n\n📧 A verification email has been sent to:\n${email}\n\nPlease check your inbox (and spam folder) and click the verification link.\n\nAfter verification, you can login to your account.`;
+                
+                alert(successMessage);
+                
+                // Auto-redirect to login page
+                setTimeout(() => {
+                    window.location.href = 'login.php';
+                }, 5000);
+                
+            } catch (error) {
+                let errorMessage = "An error occurred during signup.";
+                
+                switch(error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = '📧 This email is already registered!\n\nPlease login instead or use a different email.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = '❌ Please enter a valid email address.\n\nExample: yourname@example.com';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = '🔐 Password is too weak!\n\nPlease use at least 8 characters with numbers and special characters.';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage = '⚠️ Email/password signup is not enabled.\n\nPlease contact support for assistance.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = '🌐 Network error!\n\nPlease check your internet connection and try again.';
+                        break;
+                    default:
+                        errorMessage = `❌ Error: ${error.message}`;
+                }
+                
+                alert(errorMessage);
+            } finally {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
+            }
+        });
+
+        // Google Sign Up
+        document.getElementById('googleSignUp').addEventListener('click', async function() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
                 
-                // In real app, you would redirect here
-                // window.location.href = 'login.php';
-                // Or automatically log them in and redirect to dashboard
-            }, 2000);
+                // Save user data
+                const userData = {
+                    uid: user.uid,
+                    fullName: user.displayName,
+                    email: user.email,
+                    phone: '',
+                    emailVerified: user.emailVerified,
+                    photoURL: user.photoURL,
+                    createdAt: new Date().toISOString()
+                };
+                
+                localStorage.setItem('lottoUser', JSON.stringify(userData));
+                
+                // Save to backend
+                try {
+                    const response = await fetch('save-user.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    const result = await response.json();
+                    console.log("Google user saved:", result);
+                } catch (dbError) {
+                    console.log("Database save failed:", dbError);
+                }
+                
+                alert(`🎉 Welcome ${user.displayName}!\n\n✅ Google sign in successful.\n\nRedirecting to home page...`);
+                
+                // Redirect to home
+                setTimeout(() => {
+                    window.location.href = 'index.php';
+                }, 2000);
+                
+            } catch (error) {
+                let errorMessage = "Google sign in failed.";
+                
+                if (error.code === 'auth/popup-blocked') {
+                    errorMessage = 'Popup was blocked by your browser!\n\nPlease allow popups for this site or try again.';
+                } else if (error.code === 'auth/popup-closed-by-user') {
+                    errorMessage = 'Popup was closed!\n\nPlease try again and complete the Google sign in.';
+                } else {
+                    errorMessage = `❌ Error: ${error.message}`;
+                }
+                
+                alert(errorMessage);
+            }
         });
         
         // Phone number formatting

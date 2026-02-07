@@ -210,7 +210,7 @@
                     <div class="text-center text-gray-400 py-12">
                         <i class="fas fa-ticket-alt text-6xl mb-6 text-bronze"></i>
                         <h2 class="text-3xl font-bold text-white mb-4">Bronze Lottery</h2>
-                        <p class="text-xl mb-8">টিকেট যোগ করা হবে শীঘ্রই!</p>
+                        <p class="text-xl mb-8">Tickets will be added soon!</p>
                         <a href="index.php#lotteries" class="inline-flex items-center text-bronze hover:text-bronzeLight transition-colors">
                             <i class="fas fa-arrow-left mr-2"></i> Back to All Lotteries
                         </a>
@@ -218,7 +218,7 @@
                 <?php else: ?>
                     <div class="text-center mb-10">
                         <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Bronze Lottery</h2>
-                        <p class="text-gray-400 text-lg">মোট <?php echo count($tickets); ?> টি টিকেট</p>
+                        <p class="text-gray-400 text-lg">Total <?php echo count($tickets); ?> Tickets</p>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -226,7 +226,7 @@
                             <div class="glass-effect rounded-xl p-6 hover:shadow-lg transition-shadow">
                                 <div class="flex justify-between items-start mb-4">
                                     <div>
-                                        <span class="text-sm text-gray-400">টিকেট নাম্বার</span>
+                                        <span class="text-sm text-gray-400">Ticket Number</span>
                                         <h3 class="text-xl font-bold font-mono"><?php echo $ticket['ticket_number']; ?></h3>
                                     </div>
                                     <div class="w-12 h-12 rounded-lg gradient-bronze flex items-center justify-center">
@@ -235,7 +235,7 @@
                                 </div>
                                 
                                 <div class="mb-4">
-                                    <span class="text-sm text-gray-400">প্রাইজ অ্যামাউন্ট</span>
+                                    <span class="text-sm text-gray-400">Prize Amount</span>
                                     <p class="text-2xl font-bold text-bronze">
                                         ৳ <?php echo number_format($ticket['prize_amount'], 2); ?>
                                     </p>
@@ -243,7 +243,7 @@
                                 
                                 <?php if($ticket['prize_description']): ?>
                                     <div class="mb-4">
-                                        <span class="text-sm text-gray-400">বিবরণ</span>
+                                        <span class="text-sm text-gray-400">Description</span>
                                         <p class="text-lg"><?php echo $ticket['prize_description']; ?></p>
                                     </div>
                                 <?php endif; ?>
@@ -254,7 +254,7 @@
                 
                 <div class="text-center mt-10">
                     <a href="index.php#lotteries" class="inline-flex items-center text-bronze hover:text-bronzeLight transition-colors">
-                        <i class="fas fa-arrow-left mr-2"></i> সকল লটারিতে ফিরে যান
+                        <i class="fas fa-arrow-left mr-2"></i> Back to All Lotteries
                     </a>
                 </div>
             </div>

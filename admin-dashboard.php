@@ -24,9 +24,9 @@ if(isset($_POST['add_ticket'])) {
               VALUES ('$lottery_type_id', '$ticket_number', '$prize_amount', '$prize_description')";
     
     if(mysqli_query($conn, $query)) {
-        $success_message = "টিকেট সফলভাবে যোগ করা হয়েছে!";
+        $success_message = "Ticket added successfully!";
     } else {
-        $error_message = "টিকেট যোগ করতে সমস্যা হয়েছে: " . mysqli_error($conn);
+        $error_message = "Error adding ticket: " . mysqli_error($conn);
     }
 }
 
@@ -35,9 +35,9 @@ if(isset($_GET['delete'])) {
     $query = "DELETE FROM lottery_tickets WHERE id = '$id'";
     
     if(mysqli_query($conn, $query)) {
-        $success_message = "টিকেট ডিলিট করা হয়েছে!";
+        $success_message = "Ticket deleted successfully!";
     } else {
-        $error_message = "টিকেট ডিলিট করতে সমস্যা হয়েছে: " . mysqli_error($conn);
+        $error_message = "Error deleting ticket: " . mysqli_error($conn);
     }
 }
 
@@ -64,7 +64,7 @@ foreach($lottery_types as $type) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>লটারি ড্যাশবোর্ড - LottoElite</title>
+    <title>Lottery Dashboard - LottoElite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -88,16 +88,16 @@ foreach($lottery_types as $type) {
                         <i class="fas fa-cog text-white"></i>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold">লটারি ড্যাশবোর্ড</h1>
-                        <p class="text-xs text-gray-400">টিকেট ও প্রাইজ ম্যানেজমেন্ট</p>
+                        <h1 class="text-xl font-bold">Lottery Dashboard</h1>
+                        <p class="text-xs text-gray-400">Ticket & Prize Management</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="index.php" class="text-gray-300 hover:text-yellow-400 transition-colors">
-                        <i class="fas fa-home mr-1"></i> হোম
+                        <i class="fas fa-home mr-1"></i> Home
                     </a>
                     <a href="logout.php" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                        <i class="fas fa-sign-out-alt mr-1"></i> লগআউট
+                        <i class="fas fa-sign-out-alt mr-1"></i> Logout
                     </a>
                 </div>
             </div>
@@ -121,7 +121,7 @@ foreach($lottery_types as $type) {
             <div class="glass-effect rounded-xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm">গোল্ড লটারি টিকেট</p>
+                        <p class="text-gray-400 text-sm">Gold Lottery Tickets</p>
                         <h3 class="text-2xl font-bold mt-2"><?php echo $ticket_counts[1] ?? 0; ?></h3>
                     </div>
                     <div class="w-12 h-12 rounded-lg gradient-gold flex items-center justify-center">
@@ -133,7 +133,7 @@ foreach($lottery_types as $type) {
             <div class="glass-effect rounded-xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm">সিলভার লটারি টিকেট</p>
+                        <p class="text-gray-400 text-sm">Silver Lottery Tickets</p>
                         <h3 class="text-2xl font-bold mt-2"><?php echo $ticket_counts[2] ?? 0; ?></h3>
                     </div>
                     <div class="w-12 h-12 rounded-lg gradient-silver flex items-center justify-center">
@@ -145,7 +145,7 @@ foreach($lottery_types as $type) {
             <div class="glass-effect rounded-xl p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm">ব্রোঞ্জ লটারি টিকেট</p>
+                        <p class="text-gray-400 text-sm">Bronze Lottery Tickets</p>
                         <h3 class="text-2xl font-bold mt-2"><?php echo $ticket_counts[3] ?? 0; ?></h3>
                     </div>
                     <div class="w-12 h-12 rounded-lg gradient-bronze flex items-center justify-center">
@@ -156,13 +156,13 @@ foreach($lottery_types as $type) {
         </div>
 
         <div class="glass-effect rounded-xl p-6 mb-8">
-            <h2 class="text-xl font-bold mb-6">নতুন টিকেট যোগ করুন</h2>
+            <h2 class="text-xl font-bold mb-6">Add New Ticket</h2>
             <form method="POST" action="">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-gray-400 mb-2">লটারি টাইপ</label>
+                        <label class="block text-gray-400 mb-2">Lottery Type</label>
                         <select name="lottery_type_id" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-yellow-500">
-                            <option value="">সিলেক্ট করুন</option>
+                            <option value="">Select Lottery</option>
                             <?php foreach($lottery_types as $type): ?>
                                 <option value="<?php echo $type['id']; ?>"><?php echo $type['name']; ?></option>
                             <?php endforeach; ?>
@@ -170,31 +170,31 @@ foreach($lottery_types as $type) {
                     </div>
                     
                     <div>
-                        <label class="block text-gray-400 mb-2">টিকেট নাম্বার</label>
+                        <label class="block text-gray-400 mb-2">Ticket Number</label>
                         <input type="text" name="ticket_number" required 
                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-yellow-500"
-                               placeholder="যেমন: GLD-12345">
+                               placeholder="Example: GLD-12345">
                     </div>
                     
                     <div>
-                        <label class="block text-gray-400 mb-2">প্রাইজ অ্যামাউন্ট (৳)</label>
+                        <label class="block text-gray-400 mb-2">Prize Amount (৳)</label>
                         <input type="number" name="prize_amount" required step="0.01"
                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-yellow-500"
-                               placeholder="যেমন: 5000.00">
+                               placeholder="Example: 5000.00">
                     </div>
                     
                     <div>
-                        <label class="block text-gray-400 mb-2">প্রাইজ বিবরণ (ঐচ্ছিক)</label>
+                        <label class="block text-gray-400 mb-2">Prize Description (Optional)</label>
                         <input type="text" name="prize_description"
                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-yellow-500"
-                               placeholder="যেমন: 1st Prize">
+                               placeholder="Example: 1st Prize">
                     </div>
                 </div>
                 
                 <div class="mt-6">
                     <button type="submit" name="add_ticket" 
                             class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-lg transition-colors">
-                        <i class="fas fa-plus mr-2"></i> টিকেট যোগ করুন
+                        <i class="fas fa-plus mr-2"></i> Add Ticket
                     </button>
                 </div>
             </form>
@@ -202,26 +202,26 @@ foreach($lottery_types as $type) {
 
         <div class="glass-effect rounded-xl p-6">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold">সকল টিকেট</h2>
-                <span class="text-gray-400">মোট: <?php echo count($tickets); ?> টি টিকেট</span>
+                <h2 class="text-xl font-bold">All Tickets</h2>
+                <span class="text-gray-400">Total: <?php echo count($tickets); ?> Tickets</span>
             </div>
             
             <?php if(empty($tickets)): ?>
                 <div class="text-center py-12">
                     <i class="fas fa-ticket-alt text-4xl text-gray-600 mb-4"></i>
-                    <p class="text-gray-400">কোন টিকেট পাওয়া যায়নি। নতুন টিকেট যোগ করুন।</p>
+                    <p class="text-gray-400">No tickets found. Add new tickets.</p>
                 </div>
             <?php else: ?>
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b border-gray-700">
-                                <th class="py-3 px-4 text-left">লটারি টাইপ</th>
-                                <th class="py-3 px-4 text-left">টিকেট নাম্বার</th>
-                                <th class="py-3 px-4 text-left">প্রাইজ</th>
-                                <th class="py-3 px-4 text-left">বিবরণ</th>
-                                <th class="py-3 px-4 text-left">তারিখ</th>
-                                <th class="py-3 px-4 text-left">অ্যাকশন</th>
+                                <th class="py-3 px-4 text-left">Lottery Type</th>
+                                <th class="py-3 px-4 text-left">Ticket Number</th>
+                                <th class="py-3 px-4 text-left">Prize</th>
+                                <th class="py-3 px-4 text-left">Description</th>
+                                <th class="py-3 px-4 text-left">Date</th>
+                                <th class="py-3 px-4 text-left">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -241,7 +241,7 @@ foreach($lottery_types as $type) {
                                     <td class="py-3 px-4 text-sm text-gray-400"><?php echo date('d M Y', strtotime($ticket['created_at'])); ?></td>
                                     <td class="py-3 px-4">
                                         <a href="?delete=<?php echo $ticket['id']; ?>" 
-                                           onclick="return confirm('আপনি কি নিশ্চিত?')"
+                                           onclick="return confirm('Are you sure?')"
                                            class="text-red-400 hover:text-red-300 transition-colors">
                                             <i class="fas fa-trash"></i>
                                         </a>
@@ -257,8 +257,8 @@ foreach($lottery_types as $type) {
 
     <footer class="bg-gray-800 mt-12 py-6 border-t border-gray-700">
         <div class="container mx-auto px-4 text-center">
-            <p class="text-gray-400">© 2023 LottoElite - লটারি ড্যাশবোর্ড</p>
-            <p class="text-gray-500 text-sm mt-2">শুধুমাত্র অ্যাডমিন এক্সেসের জন্য</p>
+            <p class="text-gray-400">© 2023 LottoElite - Lottery Dashboard</p>
+            <p class="text-gray-500 text-sm mt-2">Admin Access Only</p>
         </div>
     </footer>
 </body>
